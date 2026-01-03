@@ -5,7 +5,7 @@ import base64
 import io
 
 # --- ဤနေရာတွင် Bro ယူထားသော API Key ကို ထည့်ပါ ---
-API_KEY = "AIzaSyB407uCt2nb6ym3s0iOFXXKi2Y5g28Cuo4"
+API_KEY = st.secrets["GEMINI_API_KEY"]
 # -------------------------------------------
 
 genai.configure(api_key=API_KEY)
