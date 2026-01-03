@@ -5,30 +5,34 @@ import base64
 import io
 
 st.set_page_config(page_title="AI Translator", layout="centered")
-st.title("🇲🇲 AI Translator (Myanmar-English)")
+st.title("🇲🇲 AI Translator (Dual Way)")
 
-# App ရှင်းလင်းအောင် စာသားရိုက်ပြီး ဘာသာပြန်တဲ့စနစ်ကိုပဲ အာရုံစိုက်ပါမယ်
-st.info("အသံဖြင့် ဘာသာပြန်ရန် ဖုန်း Keyboard ရှိ Microphone (🎙️) ကို အသုံးပြုပေးပါခင်ဗျာ။")
+# ဘာသာစကား ရွေးချယ်ရန်
+option = st.selectbox(
+    "ဘာသာပြန်မည့် ပုံစံကို ရွေးပါ",
+    ("မြန်မာ > English", "English > မြန်မာ")
+)
 
-if "translated_text" not in st.session_state:
-    st.session_state.translated_text = ""
-
-# Input Section
-option = st.selectbox("ဘာသာပြန်မည့်ပုံစံ", ["မြန်မာ > English", "English > မြန်မာ"])
-text_input = st.text_area("ဘာသာပြန်မည့်စာသားကို ဒီမှာရိုက်ပါ (သို့) Keyboard Voice သုံးပါ")
+# စာသားရိုက်ရန်
+text_input = st.text_area("ဘာသာပြန်မည့် စာသားကို ဤနေရာတွင် ရိုက်ပါ (သို့မဟုတ်) Keyboard Voice ကို သုံးပါ")
 
 if st.button("ဘာသာပြန်မည်"):
     if text_input:
         try:
-            # ဘာသာပြန်ခြင်း
-            src, dest = ('my', 'en') if option == "မြန်မာ > English" else ('en', 'my')
-            translated = GoogleTranslator(source=src, target=dest).translate(text_input)
-            st.session_state.translated_text = translated
+            # ရွေးချယ်မှုအလိုက် Source နဲ့ Target ကို သတ်မှတ်ခြင်း
+            if option == "မြန်မာ > English":
+                src_lang, dest_lang = 'my', 'en'
+            else:
+                src_lang, dest_lang = 'en', 'my'
             
-            st.success(f"ရလဒ်: {translated}")
+            # ဘာသာပြန်ခြင်း
+            translated = GoogleTranslator(source=src_lang, target=dest_lang).translate(text_input)
+            
+            st.success(f"ရလဒ် ({dest_lang}): {translated}")
             
             # အသံထွက်ပေးခြင်း
-            tts = gTTS(text=translated, lang=dest)
+            # မြန်မာလိုဆိုရင် lang='my'၊ အင်္ဂလိပ်ဆိုရင် lang='en' ဖြစ်ရပါမယ်
+            tts = gTTS(text=translated, lang=dest_lang)
             fp = io.BytesIO()
             tts.write_to_fp(fp)
             fp.seek(0)
@@ -36,6 +40,7 @@ if st.button("ဘာသာပြန်မည်"):
             st.markdown(f'<audio autoplay="true" src="data:audio/mp3;base64,{b64}">', unsafe_allow_html=True)
             
         except Exception as e:
-            st.error("ဘာသာပြန်ရာတွင် အမှားရှိနေပါသည်။ အင်တာနက်ကို စစ်ဆေးပေးပါ။")
+            st.error("ဘာသာပြန်၍ မရပါ။ စာသားမှန်ကန်မှုကို စစ်ဆေးပါ။")
     else:
-        st.warning("စာသား အရင်ရိုက်ပေးပါ")
+        st.warning("စာသား အရင်ရိုက်ပေးပါခင်ဗျာ။")
+        
