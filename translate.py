@@ -4,40 +4,28 @@ from gtts import gTTS
 import base64
 import io
 
-# Page Configuration
-st.set_page_config(page_title="AI Translator", page_icon="🌐", layout="centered")
+# Page Config
+st.set_page_config(page_title="AI Translator", page_icon="🌐")
 
-# Custom CSS & Copy Function
+# Custom UI
 st.markdown("""
-    <script>
-    function copyToClipboard(text) {
-        navigator.clipboard.writeText(text).then(() => {
-            alert("စာသားကို Copy ကူးလိုက်ပါပြီ!");
-        });
-    }
-    </script>
     <style>
-    .main { background-color: #f0f2f6; }
-    .stButton>button {
-        width: 100%;
-        border-radius: 25px;
-        background-color: #008DFF;
-        color: white;
-        font-weight: bold;
-    }
-    .result-container {
-        padding: 20px;
-        background-color: white;
-        border-radius: 15px;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-        margin-top: 20px;
+    .stTextArea textarea { font-size: 18px !important; }
+    .translated-text { 
+        padding: 15px; 
+        background-color: #f0f2f6; 
+        border-radius: 10px; 
+        border-left: 5px solid #008DFF;
+        font-size: 20px;
+        color: #1f1f1f;
+        margin-bottom: 10px;
     }
     </style>
     """, unsafe_allow_html=True)
 
 st.title("🌐 Global AI Translator")
 
-# ဘာသာစကား စာရင်း
+# ဘာသာစကားရွေးချယ်မှု
 LANGUAGES = {
     'Myanmar': 'my', 'English': 'en', 'Thai': 'th', 
     'Korean': 'ko', 'Japanese': 'ja', 'Chinese': 'zh-CN'
@@ -45,11 +33,12 @@ LANGUAGES = {
 
 col1, col2 = st.columns(2)
 with col1:
-    source_lang = st.selectbox("မှ (From)", ["Auto Detect"] + list(LANGUAGES.keys()))
+    source_lang = st.selectbox("From", ["Auto Detect"] + list(LANGUAGES.keys()))
 with col2:
-    target_lang = st.selectbox("သို့ (To)", list(LANGUAGES.keys()), index=1)
+    target_lang = st.selectbox("To", list(LANGUAGES.keys()), index=1)
 
-text_to_translate = st.text_area("ဘာသာပြန်မည့်စာသားကို ရိုက်ပါ...", height=120)
+# Input
+text_to_translate = st.text_area("စာသားရိုက်ပါ...", height=150)
 
 if st.button("Translate Now"):
     if text_to_translate:
@@ -57,21 +46,18 @@ if st.button("Translate Now"):
             src = 'auto' if source_lang == "Auto Detect" else LANGUAGES[source_lang]
             dest = LANGUAGES[target_lang]
             
+            # ဘာသာပြန်ခြင်း
             translated = GoogleTranslator(source=src, target=dest).translate(text_to_translate)
             
-            # Result Display
-            st.markdown(f"""
-                <div class="result-container">
-                    <p style="color: #666;">ဘာသာပြန်ရလဒ် ({target_lang}):</p>
-                    <h3 id="result_text">{translated}</h3>
-                </div>
-            """, unsafe_allow_html=True)
+            # ၁။ ဘာသာပြန်ထားတဲ့ စာသားကို ရှင်းရှင်းလင်းလင်း ပြပေးခြင်း
+            st.subheader(f"ရလဒ် ({target_lang}):")
+            st.markdown(f'<div class="translated-text">{translated}</div>', unsafe_allow_html=True)
 
-            # Copy Button (Using Streamlit Button with Logic)
-            st.button("📋 Copy Translation", on_click=lambda: st.write(f"ကူးယူထားသောစာ: {translated}"))
-            st.info("အပေါ်က စာသားကို ဖိပြီးလည်း Copy ကူးနိုင်ပါတယ်")
+            # ၂။ Copy ကူးရန် ခလုတ် (Streamlit ရဲ့ code block ကို သုံးရင် copy ကူးရတာ ပိုလွယ်ပါတယ်)
+            st.code(translated, language=None)
+            st.caption("အပေါ်က အကွက်ထဲက စာသားကို ညာဘက်ထောင့်က icon လေးနှိပ်ပြီး Copy ကူးနိုင်ပါတယ်။")
 
-            # Text to Speech
+            # ၃။ အသံထွက်ပေးခြင်း
             tts = gTTS(text=translated, lang=dest)
             fp = io.BytesIO()
             tts.write_to_fp(fp)
@@ -81,5 +67,7 @@ if st.button("Translate Now"):
             st.audio(fp, format="audio/mp3")
 
         except Exception as e:
-            st.error("Error: ဘာသာပြန်၍ မရပါ။")
-            
+            st.error("ဘာသာပြန်ရာတွင် အမှားရှိနေပါသည်။")
+    else:
+        st.warning("စာသား အရင်ရိုက်ပါ")
+        
