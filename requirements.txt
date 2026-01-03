@@ -1,5 +1,5 @@
 streamlit
-deep-translator
+google-generativeai
 gTTS
 
 
