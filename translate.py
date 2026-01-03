@@ -12,7 +12,7 @@ genai.configure(api_key=API_KEY)
 
 # Model ကို နာမည်အပြည့်အစုံဖြင့် ခေါ်ခြင်း
 # နာမည်ကို 'gemini-1.5-flash' လို့ပဲ သုံးပါမယ်
-model = genai.GenerativeModel('gemini-1.5-flash')
+model = genai.GenerativeModel('models/gemini-1.5-flash')
 
 st.set_page_config(page_title="AI Smart Translator", page_icon="🤖")
 
