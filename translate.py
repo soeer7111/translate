@@ -4,56 +4,81 @@ from gtts import gTTS
 import base64
 import io
 
-# --- ဤနေရာတွင် Bro ယူထားသော API Key ကို ထည့်ပါ ---
-API_KEY = st.secrets["GEMINI_API_KEY"]
-# -------------------------------------------
+# --- API KEY နေရာ ---
+API_KEY = st.secrets["GEMINI_API_KEY"] 
+# ------------------
 
-genai.configure(api_key=API_KEY)
-model = genai.GenerativeModel('gemini-1.5-flash')
+# Gemini Configuration
+try:
+    genai.configure(api_key=API_KEY)
+    model = genai.GenerativeModel('gemini-1.5-flash')
+except:
+    st.error("API Configuration မှာ အမှားရှိနေပါတယ်။")
 
-st.set_page_config(page_title="Gemini AI Translator", page_icon="💎")
+st.set_page_config(page_title="AI Multi-Translator", page_icon="💎")
 
+# UI Styling
 st.markdown("""
     <style>
-    .result-box { padding: 20px; background-color: #f0f4f8; border-radius: 15px; border: 1px solid #007bff; color: #000; font-size: 18px; margin-bottom: 10px; }
+    .result-box { padding: 15px; background-color: #ffffff; border-radius: 10px; border-left: 5px solid #007bff; color: #000; font-size: 18px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
     </style>
     """, unsafe_allow_html=True)
 
-st.title("💎 Gemini AI Translator")
-st.write("Google ရဲ့ အဆင့်မြင့် Gemini AI ကို အသုံးပြုထားပါတယ်")
+st.title("💎 Smart AI Multi-Translator")
 
-target_lang = st.selectbox("ဘာသာပြန်မည့် ဘာသာစကား", ["English", "Myanmar", "Thai", "Korean", "Japanese"])
+# ဘာသာစကားစာရင်း (Bro စိတ်ကြိုက်ထပ်တိုးနိုင်သည်)
+LANG_LIST = {
+    'Myanmar': 'my',
+    'English': 'en',
+    'Thai': 'th',
+    'Korean': 'ko',
+    'Japanese': 'ja',
+    'Chinese': 'zh-CN',
+    'French': 'fr'
+}
 
-text_input = st.text_area("ဘာသာပြန်မည့် စာသားကို ရိုက်ပါ...", height=150)
+# Language Selectors (ဒီမှာ From နဲ့ To ကို စိတ်ကြိုက်ရွေးလို့ရအောင် လုပ်ပေးထားပါတယ်)
+col1, col2 = st.columns(2)
+with col1:
+    from_lang = st.selectbox("မူရင်းဘာသာ (From)", ["Auto Detect"] + list(LANG_LIST.keys()))
+with col2:
+    to_lang = st.selectbox("ဘာသာပြန်မည့်ဘာသာ (To)", list(LANG_LIST.keys()), index=1)
 
-if st.button("AI ဖြင့် ဘာသာပြန်မည်"):
+text_input = st.text_area("စာသားရိုက်ပါ (သို့မဟုတ်) Voice Keyboard သုံးပါ...", height=150)
+
+if st.button("AI ဘာသာပြန်မည်"):
     if text_input:
         try:
-            with st.spinner('Gemini AI က စဉ်းစားနေပါသည်...'):
-                # Gemini ကို ဘာသာပြန်ခိုင်းခြင်း
-                prompt = f"Translate the following text to {target_lang}. Return only the translated text: {text_input}"
-                response = model.generate_content(prompt)
-                translated = response.text
-
-                st.subheader("ဘာသာပြန်ရလဒ် -")
-                st.markdown(f'<div class="result-box">{translated}</div>', unsafe_allow_html=True)
+            with st.spinner('AI စဉ်းစားနေပါသည်...'):
+                # Gemini ကို ခိုင်းမည့်စာသား (Prompt)
+                prompt = f"Translate the following text from {from_lang} to {to_lang}. Output ONLY the translated text: {text_input}"
                 
-                # Copy ရလွယ်အောင် ထည့်ပေးထားခြင်း
-                st.text_input("Copy ယူရန် ဤနေရာတွင် ဖိနှိပ်ပါ", value=translated)
+                response = model.generate_content(prompt)
+                translated_text = response.text.strip()
 
-                # အသံထွက်ပေးခြင်း
-                lang_code = {'English': 'en', 'Myanmar': 'my', 'Thai': 'th', 'Korean': 'ko', 'Japanese': 'ja'}
-                tts = gTTS(text=translated, lang=lang_code[target_lang])
-                fp = io.BytesIO()
-                tts.write_to_fp(fp)
-                fp.seek(0)
-                b64 = base64.b64encode(fp.read()).decode()
-                st.markdown(f'<audio autoplay="true" src="data:audio/mp3;base64,{b64}">', unsafe_allow_html=True)
-                st.audio(fp)
+                if translated_text:
+                    st.subheader("ဘာသာပြန်ရလဒ်")
+                    st.markdown(f'<div class="result-box">{translated_text}</div>', unsafe_allow_html=True)
+                    
+                    # Copy ရန် အကွက်
+                    st.text_input("Copy ယူရန် (Long press to copy)", value=translated_text)
+
+                    # အသံထွက် (TTS)
+                    dest_code = LANG_LIST[to_lang]
+                    tts = gTTS(text=translated_text, lang=dest_code)
+                    fp = io.BytesIO()
+                    tts.write_to_fp(fp)
+                    fp.seek(0)
+                    b64 = base64.b64encode(fp.read()).decode()
+                    st.markdown(f'<audio autoplay="true" src="data:audio/mp3;base64,{b64}">', unsafe_allow_html=True)
+                    st.audio(fp)
+                else:
+                    st.warning("ဘာသာပြန်လို့ မရပါဘူးခင်ဗျာ။")
 
         except Exception as e:
-            st.error("API Key မှားနေသည် (သို့မဟုတ်) အင်တာနက် မကောင်းပါ။")
+            # တကယ်လို့ Error တက်ရင် ဘာကြောင့်လဲဆိုတာ မြင်ရအောင် e ကိုပါ ပြခိုင်းထားပါတယ်
+            st.error(f"Error တက်နေပါတယ်: {str(e)}")
+            st.info("API Key သေချာထည့်ထားလား ပြန်စစ်ပေးပါ Bro")
     else:
-        st.warning("စာသား အရင်ရိုက်ပါ")
-        
+        st.warning("ဘာသာပြန်ဖို့ စာသားအရင်ရိုက်ပါ")
         
