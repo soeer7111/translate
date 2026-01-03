@@ -1,21 +1,17 @@
 import streamlit as st
-import google.generativeai as genai
+from google import genai
 from gtts import gTTS
 import base64
 import io
 
-# Secrets မှ API Key ကို ယူခြင်း
-try:
-    API_KEY = st.secrets["GEMINI_API_KEY"]
-    genai.configure(api_key=API_KEY)
-    # v1beta 404 error ကင်းဝေးစေရန် models/prefix ကို သုံးထားပါသည်
-    model = genai.GenerativeModel(model_name='models/gemini-1.5-flash')
-except Exception as e:
-    st.error("Secrets ထဲမှာ API Key ကို 'GEMINI_API_KEY' ဆိုတဲ့ နာမည်နဲ့ သေချာထည့်ပေးပါ Bro")
+# API Key ကို Secrets မှယူခြင်း
+API_KEY = st.secrets["GEMINI_API_KEY"]
 
-# UI Settings
-st.set_page_config(page_title="Pro AI Translator", page_icon="💎")
-st.title("💎 Pro AI Translator")
+# Client အသစ် တည်ဆောက်ခြင်း
+client = genai.Client(api_key=API_KEY)
+
+st.set_page_config(page_title="AI Pro Translator", page_icon="🤖")
+st.title("🤖 Pro AI Translator (Gemini 2.0)")
 
 LANGS = {
     'Myanmar': 'my', 'English': 'en', 'Thai': 'th', 
@@ -24,38 +20,36 @@ LANGS = {
 
 col1, col2 = st.columns(2)
 with col1:
-    to_lang_name = st.selectbox("ဘာသာပြန်မည့်ဘာသာ (To)", list(LANGS.keys()))
+    to_lang = st.selectbox("To (ဘာသာပြန်မည့်ဘာသာ)", list(LANGS.keys()))
 
-text_in = st.text_area("ဒီမှာ စာရိုက်ပါ...", height=150)
+text_in = st.text_area("စာသားရိုက်ပါ...", height=150)
 
-if st.button("AI ဘာသာပြန်မည်"):
+if st.button("AI ဖြင့် ဘာသာပြန်မည်"):
     if text_in:
         try:
             with st.spinner('AI က စဉ်းစားနေပါသည်...'):
-                # AI ကို ပိုမိုကျွမ်းကျင်စွာ ဘာသာပြန်ခိုင်းမည့် Prompt
-                prompt = f"You are an expert translator. Translate the following text into {to_lang_name} naturally and accurately. Only output the translated text: {text_in}"
+                # Gemini 2.0 Flash ကို အသုံးပြုခြင်း
+                response = client.models.generate_content(
+                    model="gemini-2.0-flash",
+                    contents=f"Professional translation: Translate this text into {to_lang}. Output only the translated text: {text_in}"
+                )
+                res = response.text.strip()
                 
-                response = model.generate_content(prompt)
-                translated_text = response.text.strip()
+                st.subheader("ဘာသာပြန်ရလဒ် -")
+                st.info(res)
+                st.text_input("Copy ယူရန်", value=res)
+
+                # အသံထွက်
+                tts = gTTS(text=res, lang=LANGS[to_lang])
+                fp = io.BytesIO()
+                tts.write_to_fp(fp)
+                fp.seek(0)
+                b64 = base64.b64encode(fp.read()).decode()
+                st.markdown(f'<audio autoplay="true" src="data:audio/mp3;base64,{b64}">', unsafe_allow_html=True)
+                st.audio(fp)
                 
-                if translated_text:
-                    st.subheader("ရလဒ် -")
-                    st.success(translated_text)
-                    
-                    # Copy ယူရန် အကွက်
-                    st.text_input("Copy ယူရန် (Long Press)", value=translated_text)
-                    
-                    # အသံထွက် (TTS)
-                    dest_code = LANGS[to_lang_name]
-                    tts = gTTS(text=translated_text, lang=dest_code)
-                    fp = io.BytesIO()
-                    tts.write_to_fp(fp)
-                    fp.seek(0)
-                    b64 = base64.b64encode(fp.read()).decode()
-                    st.markdown(f'<audio autoplay="true" src="data:audio/mp3;base64,{b64}">', unsafe_allow_html=True)
-                    st.audio(fp)
         except Exception as e:
             st.error(f"Error: {str(e)}")
     else:
-        st.warning("ဘာသာပြန်ဖို့ စာသားအရင်ရိုက်ပါ")
+        st.warning("စာသား အရင်ရိုက်ပါ")
         
