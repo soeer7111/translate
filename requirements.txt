@@ -3,5 +3,6 @@ streamlit-mic-recorder
 SpeechRecognition
 deep-translator
 gTTS
+pydub
 
 
