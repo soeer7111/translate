@@ -4,35 +4,64 @@ from gtts import gTTS
 import base64
 import io
 
-# Secrets မှ Key ကို ယူခြင်း
-API_KEY = st.secrets["GEMINI_API_KEY"]
-client = genai.Client(api_key=API_KEY)
+# ၁။ API Configuration (SDK အသစ်ပုံစံ)
+try:
+    API_KEY = st.secrets["GEMINI_API_KEY"]
+    client = genai.Client(api_key=API_KEY)
+except Exception as e:
+    st.error("Secrets ထဲမှာ API Key ကို အရင်စစ်ဆေးပါ Bro!")
 
-st.set_page_config(page_title="AI Pro Translator", page_icon="🤖")
-st.title("🤖 Pro AI Translator")
+st.set_page_config(page_title="AI Gemini 3 Translator", page_icon="⚡")
+st.title("⚡ AI Translator (Gemini 3 Flash)")
 
-LANGS = {'Myanmar': 'my', 'English': 'en', 'Thai': 'th', 'Korean': 'ko', 'Japanese': 'ja'}
-to_lang = st.selectbox("To (ဘာသာပြန်မည့်ဘာသာ)", list(LANGS.keys()))
-text_in = st.text_area("စာသားရိုက်ပါ...", height=150)
+# ဘာသာစကားစာရင်း
+LANGS = {
+    'Myanmar': 'my', 
+    'English': 'en', 
+    'Thai': 'th', 
+    'Korean': 'ko', 
+    'Japanese': 'ja', 
+    'Chinese': 'zh-CN'
+}
 
-if st.button("ဘာသာပြန်မည်"):
+to_lang_name = st.selectbox("ဘာသာပြန်မည့် ဘာသာစကားကို ရွေးပါ -", list(LANGS.keys()))
+text_in = st.text_area("ဘာသာပြန်ချင်သည့် စာသားကို ဒီမှာ ရိုက်ထည့်ပါ...", height=150)
+
+# ၂။ ဘာသာပြန်ခြင်း လုပ်ဆောင်ချက်
+if st.button("AI ဖြင့် ဘာသာပြန်မည်"):
     if text_in:
         try:
-            with st.spinner('AI က စဉ်းစားနေပါသည်...'):
+            with st.spinner('Gemini 3 က စဉ်းစားနေပါသည်...'):
+                # Colab မှာ အောင်မြင်ခဲ့တဲ့ gemini-3-flash-preview ကို သုံးပါမယ်
                 response = client.models.generate_content(
-                    model="gemini-2.0-flash",
-                    contents=f"Translate this text to {to_lang}. Output only the translated text: {text_in}"
+                    model="gemini-3-flash-preview",
+                    contents=f"Translate the following text to {to_lang_name} naturally. Only output the translated text: {text_in}"
                 )
-                res = response.text.strip()
-                st.success(res)
                 
-                # အသံထွက် (TTS)
-                tts = gTTS(text=res, lang=LANGS[to_lang])
+                res_text = response.text.strip()
+                
+                # ရလဒ်ပြသခြင်း
+                st.subheader("ဘာသာပြန်ရလဒ် -")
+                st.success(res_text)
+                
+                # ၃။ အသံထွက် (TTS)
+                dest_code = LANGS[to_lang_name]
+                tts = gTTS(text=res_text, lang=dest_code)
                 fp = io.BytesIO()
                 tts.write_to_fp(fp)
                 fp.seek(0)
+                
+                # Audio Autoplay လုပ်ခြင်း
                 b64 = base64.b64encode(fp.read()).decode()
                 st.markdown(f'<audio autoplay="true" src="data:audio/mp3;base64,{b64}">', unsafe_allow_html=True)
+                st.audio(fp)
+                
         except Exception as e:
-            st.error(f"Error: {e}")
-            
+            # 429 Quota ပြည့်ရင် ပြမယ့်စာသား
+            if "429" in str(e):
+                st.error("Gemini 3 က Preview ဖြစ်လို့ အခုခဏ Quota ပြည့်သွားပါပြီ။ ၁ မိနစ်လောက် စောင့်ပြီး ပြန်နှိပ်ပေးပါ Bro။")
+            else:
+                st.error(f"Error: {e}")
+    else:
+        st.warning("ဘာသာပြန်ဖို့ စာသား အရင်ရိုက်ပါဦး Bro ရေ")
+        
