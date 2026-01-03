@@ -4,43 +4,90 @@ from gtts import gTTS
 import base64
 import io
 
-st.set_page_config(page_title="AI Translator", layout="centered")
-st.title("🇲🇲 AI Translator (Dual Way)")
+# Page Configuration
+st.set_page_config(page_title="Global AI Translator", page_icon="🌐", layout="centered")
 
-# ဘာသာစကား ရွေးချယ်ရန်
-option = st.selectbox(
-    "ဘာသာပြန်မည့် ပုံစံကို ရွေးပါ",
-    ("မြန်မာ > English", "English > မြန်မာ")
-)
+# Custom CSS for Modern UI
+st.markdown("""
+    <style>
+    .main { background-color: #f0f2f6; }
+    .stButton>button {
+        width: 100%;
+        border-radius: 25px;
+        background-color: #008DFF;
+        color: white;
+        height: 3em;
+        font-weight: bold;
+        border: none;
+    }
+    .result-container {
+        padding: 20px;
+        background-color: white;
+        border-radius: 15px;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+        margin-top: 20px;
+    }
+    </style>
+    """, unsafe_allow_html=True)
 
-# စာသားရိုက်ရန်
-text_input = st.text_area("ဘာသာပြန်မည့် စာသားကို ဤနေရာတွင် ရိုက်ပါ (သို့မဟုတ်) Keyboard Voice ကို သုံးပါ")
+st.title("🌐 Global AI Translator")
+st.write("ဘာသာစကားပေါင်းစုံကို အသံထွက်နဲ့တကွ ဘာသာပြန်ပေးပါသည်")
 
-if st.button("ဘာသာပြန်မည်"):
-    if text_input:
+# ဘာသာစကား စာရင်း
+LANGUAGES = {
+    'Myanmar': 'my',
+    'English': 'en',
+    'Thai': 'th',
+    'Korean': 'ko',
+    'Japanese': 'ja',
+    'Chinese': 'zh-CN',
+    'French': 'fr',
+    'Russian': 'ru'
+}
+
+# Language Selection
+col1, col2 = st.columns(2)
+with col1:
+    source_lang = st.selectbox("မှ (From)", ["Auto Detect"] + list(LANGUAGES.keys()))
+with col2:
+    target_lang = st.selectbox("သို့ (To)", list(LANGUAGES.keys()), index=1)
+
+# Input
+text_to_translate = st.text_area("ဘာသာပြန်မည့်စာသားကို ရိုက်ပါ...", height=150)
+
+if st.button("Translate Now"):
+    if text_to_translate:
         try:
-            # ရွေးချယ်မှုအလိုက် Source နဲ့ Target ကို သတ်မှတ်ခြင်း
-            if option == "မြန်မာ > English":
-                src_lang, dest_lang = 'my', 'en'
-            else:
-                src_lang, dest_lang = 'en', 'my'
-            
-            # ဘာသာပြန်ခြင်း
-            translated = GoogleTranslator(source=src_lang, target=dest_lang).translate(text_input)
-            
-            st.success(f"ရလဒ် ({dest_lang}): {translated}")
-            
-            # အသံထွက်ပေးခြင်း
-            # မြန်မာလိုဆိုရင် lang='my'၊ အင်္ဂလိပ်ဆိုရင် lang='en' ဖြစ်ရပါမယ်
-            tts = gTTS(text=translated, lang=dest_lang)
-            fp = io.BytesIO()
-            tts.write_to_fp(fp)
-            fp.seek(0)
-            b64 = base64.b64encode(fp.read()).decode()
-            st.markdown(f'<audio autoplay="true" src="data:audio/mp3;base64,{b64}">', unsafe_allow_html=True)
-            
+            with st.spinner('AI က ဘာသာပြန်ပေးနေပါသည်...'):
+                # Translator Logic
+                src = 'auto' if source_lang == "Auto Detect" else LANGUAGES[source_lang]
+                dest = LANGUAGES[target_lang]
+                
+                translator = GoogleTranslator(source=src, target=dest)
+                translated = translator.translate(text_to_translate)
+                
+                # Show Result
+                st.markdown(f"""
+                <div class="result-container">
+                    <p style="color: #666; font-size: 0.9em;">ဘာသာပြန်ရလဒ် ({target_lang}):</p>
+                    <h2 style="color: #333;">{translated}</h2>
+                </div>
+                """, unsafe_allow_html=True)
+                
+                # Text to Speech
+                tts = gTTS(text=translated, lang=dest)
+                fp = io.BytesIO()
+                tts.write_to_fp(fp)
+                fp.seek(0)
+                b64 = base64.b64encode(fp.read()).decode()
+                
+                # Audio Control
+                st.markdown(f'<audio autoplay="true" src="data:audio/mp3;base64,{b64}">', unsafe_allow_html=True)
+                st.audio(fp, format="audio/mp3")
+                
         except Exception as e:
-            st.error("ဘာသာပြန်၍ မရပါ။ စာသားမှန်ကန်မှုကို စစ်ဆေးပါ။")
+            st.error("ခဏနေမှ ပြန်ကြိုးစားပါ (သို့မဟုတ်) စာသားကို စစ်ဆေးပါ။")
     else:
-        st.warning("စာသား အရင်ရိုက်ပေးပါခင်ဗျာ။")
-        
+        st.warning("ဘာသာပြန်ဖို့ စာသားအရင်ရိုက်ပါ")
+
+st.info("💡 အကြံပြုချက် - ဖုန်း keyboard က Microphone (🎙️) ကိုသုံးပြီး အသံနဲ့ စာရိုက်နိုင်ပါတယ်")
