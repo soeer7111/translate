@@ -11,7 +11,7 @@ API_KEY = st.secrets["GEMINI_API_KEY"]
 # Gemini Configuration
 try:
     genai.configure(api_key=API_KEY)
-    model = genai.GenerativeModel('gemini-pro')
+    model = genai.GenerativeModel('gemini-1.5-flash-latest')
 except:
     st.error("API Configuration မှာ အမှားရှိနေပါတယ်။")
 
