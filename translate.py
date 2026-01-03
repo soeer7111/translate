@@ -1,73 +1,59 @@
 import streamlit as st
-from deep_translator import GoogleTranslator
+import google.generativeai as genai
 from gtts import gTTS
 import base64
 import io
 
-# Page Config
-st.set_page_config(page_title="AI Translator", page_icon="🌐")
+# --- ဤနေရာတွင် Bro ယူထားသော API Key ကို ထည့်ပါ ---
+API_KEY = "AIzaSyB407uCt2nb6ym3s0iOFXXKi2Y5g28Cuo4"
+# -------------------------------------------
 
-# Custom UI
+genai.configure(api_key=API_KEY)
+model = genai.GenerativeModel('gemini-1.5-flash')
+
+st.set_page_config(page_title="Gemini AI Translator", page_icon="💎")
+
 st.markdown("""
     <style>
-    .stTextArea textarea { font-size: 18px !important; }
-    .translated-text { 
-        padding: 15px; 
-        background-color: #f0f2f6; 
-        border-radius: 10px; 
-        border-left: 5px solid #008DFF;
-        font-size: 20px;
-        color: #1f1f1f;
-        margin-bottom: 10px;
-    }
+    .result-box { padding: 20px; background-color: #f0f4f8; border-radius: 15px; border: 1px solid #007bff; color: #000; font-size: 18px; margin-bottom: 10px; }
     </style>
     """, unsafe_allow_html=True)
 
-st.title("🌐 Global AI Translator")
+st.title("💎 Gemini AI Translator")
+st.write("Google ရဲ့ အဆင့်မြင့် Gemini AI ကို အသုံးပြုထားပါတယ်")
 
-# ဘာသာစကားရွေးချယ်မှု
-LANGUAGES = {
-    'Myanmar': 'my', 'English': 'en', 'Thai': 'th', 
-    'Korean': 'ko', 'Japanese': 'ja', 'Chinese': 'zh-CN'
-}
+target_lang = st.selectbox("ဘာသာပြန်မည့် ဘာသာစကား", ["English", "Myanmar", "Thai", "Korean", "Japanese"])
 
-col1, col2 = st.columns(2)
-with col1:
-    source_lang = st.selectbox("From", ["Auto Detect"] + list(LANGUAGES.keys()))
-with col2:
-    target_lang = st.selectbox("To", list(LANGUAGES.keys()), index=1)
+text_input = st.text_area("ဘာသာပြန်မည့် စာသားကို ရိုက်ပါ...", height=150)
 
-# Input
-text_to_translate = st.text_area("စာသားရိုက်ပါ...", height=150)
-
-if st.button("Translate Now"):
-    if text_to_translate:
+if st.button("AI ဖြင့် ဘာသာပြန်မည်"):
+    if text_input:
         try:
-            src = 'auto' if source_lang == "Auto Detect" else LANGUAGES[source_lang]
-            dest = LANGUAGES[target_lang]
-            
-            # ဘာသာပြန်ခြင်း
-            translated = GoogleTranslator(source=src, target=dest).translate(text_to_translate)
-            
-            # ၁။ ဘာသာပြန်ထားတဲ့ စာသားကို ရှင်းရှင်းလင်းလင်း ပြပေးခြင်း
-            st.subheader(f"ရလဒ် ({target_lang}):")
-            st.markdown(f'<div class="translated-text">{translated}</div>', unsafe_allow_html=True)
+            with st.spinner('Gemini AI က စဉ်းစားနေပါသည်...'):
+                # Gemini ကို ဘာသာပြန်ခိုင်းခြင်း
+                prompt = f"Translate the following text to {target_lang}. Return only the translated text: {text_input}"
+                response = model.generate_content(prompt)
+                translated = response.text
 
-            # ၂။ Copy ကူးရန် ခလုတ် (Streamlit ရဲ့ code block ကို သုံးရင် copy ကူးရတာ ပိုလွယ်ပါတယ်)
-            st.code(translated, language=None)
-            st.caption("အပေါ်က အကွက်ထဲက စာသားကို ညာဘက်ထောင့်က icon လေးနှိပ်ပြီး Copy ကူးနိုင်ပါတယ်။")
+                st.subheader("ဘာသာပြန်ရလဒ် -")
+                st.markdown(f'<div class="result-box">{translated}</div>', unsafe_allow_html=True)
+                
+                # Copy ရလွယ်အောင် ထည့်ပေးထားခြင်း
+                st.text_input("Copy ယူရန် ဤနေရာတွင် ဖိနှိပ်ပါ", value=translated)
 
-            # ၃။ အသံထွက်ပေးခြင်း
-            tts = gTTS(text=translated, lang=dest)
-            fp = io.BytesIO()
-            tts.write_to_fp(fp)
-            fp.seek(0)
-            b64 = base64.b64encode(fp.read()).decode()
-            st.markdown(f'<audio autoplay="true" src="data:audio/mp3;base64,{b64}">', unsafe_allow_html=True)
-            st.audio(fp, format="audio/mp3")
+                # အသံထွက်ပေးခြင်း
+                lang_code = {'English': 'en', 'Myanmar': 'my', 'Thai': 'th', 'Korean': 'ko', 'Japanese': 'ja'}
+                tts = gTTS(text=translated, lang=lang_code[target_lang])
+                fp = io.BytesIO()
+                tts.write_to_fp(fp)
+                fp.seek(0)
+                b64 = base64.b64encode(fp.read()).decode()
+                st.markdown(f'<audio autoplay="true" src="data:audio/mp3;base64,{b64}">', unsafe_allow_html=True)
+                st.audio(fp)
 
         except Exception as e:
-            st.error("ဘာသာပြန်ရာတွင် အမှားရှိနေပါသည်။")
+            st.error("API Key မှားနေသည် (သို့မဟုတ်) အင်တာနက် မကောင်းပါ။")
     else:
         st.warning("စာသား အရင်ရိုက်ပါ")
+        
         
