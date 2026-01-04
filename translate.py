@@ -1,4 +1,4 @@
- import streamlit as st
+import streamlit as st
 from google import genai
 from gtts import gTTS
 import base64
@@ -13,7 +13,7 @@ except Exception:
     st.error("API Key မတွေ့ပါ။")
 
 # UI Styling
-st.set_page_config(page_title="Pro AI Translator", page_icon="🌍", layout="wide")
+st.set_page_config(page_title="😁barlar barlar AI Translatorr😂", page_icon="🌍", layout="wide")
 
 st.markdown("""
     <style>
