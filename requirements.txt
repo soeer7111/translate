@@ -2,5 +2,5 @@ streamlit
 google-genai
 gTTS
 Pillow
-
+st-copy-to-clipboard
 
