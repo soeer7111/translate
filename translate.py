@@ -4,57 +4,49 @@ from gtts import gTTS
 import base64
 import io
 from PIL import Image
+from st_copy_to_clipboard import st_copy_to_clipboard
 
 # ၁။ API Configuration
 try:
     API_KEY = st.secrets["GEMINI_API_KEY"]
     client = genai.Client(api_key=API_KEY)
 except Exception:
-    st.error("API Key မတွေ့ပါ။ Secrets ထဲမှာ GEMINI_API_KEY ကို ထည့်ပေးပါ။")
+    st.error("API Key မတွေ့ပါ။")
 
 # UI Styling
 st.set_page_config(page_title="Gemini Pro Vision Hub", page_icon="📸", layout="wide")
 
-# Custom CSS for UI
 st.markdown("""
     <style>
     .stButton>button { width: 100%; border-radius: 10px; background-color: #007bff; color: white; font-weight: bold; }
-    .result-area { background-color: #f8f9fa; padding: 20px; border-radius: 10px; border: 1px solid #dee2e6; margin-bottom: 10px; color: #333; }
+    .result-area { background-color: #f8f9fa; padding: 20px; border-radius: 10px; border: 1px solid #dee2e6; margin-bottom: 10px; color: #333; font-size: 1.1em; }
     </style>
     """, unsafe_allow_html=True)
 
-# Sidebar - History
-if 'history' not in st.session_state:
-    st.session_state.history = []
-
-with st.sidebar:
-    st.title("📜 History")
-    if st.button("Clear History"):
-        st.session_state.history = []
-        st.rerun()
-    for h in reversed(st.session_state.history[-10:]):
-        st.caption(f"• {h}")
+# Autoplay Function
+def autoplay_audio(audio_fp):
+    audio_bytes = audio_fp.read()
+    b64 = base64.b64encode(audio_bytes).decode()
+    md = f'<audio autoplay="true"><source src="data:audio/mp3;base64,{b64}" type="audio/mp3"></audio>'
+    st.markdown(md, unsafe_allow_html=True)
 
 # Main App
-st.title("📸 Barlar😁😁😁😁 AI  Translator")
-st.write("Text, Files နှင့် Images များကို AI ဖြင့် တစ်နေရာတည်းတွင် ဘာသာပြန်ပါ")
+st.title("😂 barlar barlar AI Translator😂")
 
 LANGS = {'Myanmar': 'my', 'English': 'en', 'Thai': 'th', 'Korean': 'ko', 'Japanese': 'ja', 'Chinese': 'zh-CN'}
-
 tab1, tab2, tab3 = st.tabs(["📝 Text", "📁 File", "🖼️ Image Scan"])
 
-# Function to handle translation
 def translate_ai(content, target_lang, is_image=False):
     try:
         if is_image:
             response = client.models.generate_content(
                 model="gemini-1.5-flash",
-                contents=["ဖော်ပြပါပုံထဲက စာသားများကို အကုန်ဖတ်ပြီး " + target_lang + " ဘာသာသို့ အဓိပ္ပာယ်ပြည့်စုံစွာ ပြန်ပေးပါ။ ရလဒ်စာသားပဲ ထုတ်ပေးပါ။", content]
+                contents=["ပုံထဲကစာသားတွေကိုဖတ်ပြီး " + target_lang + " ဘာသာပြန်ပေးပါ။ ရလဒ်စာသားပဲပေးပါ။", content]
             )
         else:
             response = client.models.generate_content(
                 model="gemini-3-flash-preview",
-                contents=f"Translate the following to {target_lang} naturally. Return only translation: {content}"
+                contents=f"Translate to {target_lang} naturally: {content}"
             )
         return response.text.strip()
     except Exception as e:
@@ -70,23 +62,16 @@ with tab1:
     
     if btn_t and input_t:
         res = translate_ai(input_t, target_t)
-        st.session_state.history.append(f"Text: {res[:20]}...")
         st.markdown(f'<div class="result-area">{res}</div>', unsafe_allow_html=True)
-        st.text_input("Copy လုပ်ရန် (Select & Copy)", value=res)
+        
+        # Copy Button ထည့်သွင်းခြင်း
+        st_copy_to_clipboard(res, before_text="📋 Copy", after_text="✅ Copied!")
+        
         tts = gTTS(res, lang=LANGS[target_t])
         fp = io.BytesIO()
         tts.write_to_fp(fp)
-        st.audio(fp)
-
-# --- TAB 2: File ---
-with tab2:
-    target_f = st.selectbox("Target Language", list(LANGS.keys()), key="t2")
-    file = st.file_uploader("Upload Text File (.txt)", type=['txt'])
-    if file and st.button("Translate File 🚀"):
-        content = file.getvalue().decode("utf-8")
-        res = translate_ai(content[:5000], target_f)
-        st.markdown(f'<div class="result-area">{res}</div>', unsafe_allow_html=True)
-        st.download_button("Download Translated File", res, file_name="translated.txt")
+        fp.seek(0)
+        autoplay_audio(fp)
 
 # --- TAB 3: Image Scan ---
 with tab3:
@@ -101,14 +86,15 @@ with tab3:
             with st.spinner("AI is reading the image..."):
                 res = translate_ai(img, target_i, is_image=True)
                 st.markdown(f'<div class="result-area">{res}</div>', unsafe_allow_html=True)
-                st.text_input("Copy Result:", value=res, key="img_res")
-                try:
-                    tts = gTTS(res, lang=LANGS[target_i])
-                    fp = io.BytesIO()
-                    tts.write_to_fp(fp)
-                    st.audio(fp)
-                except: pass
+                
+                # Copy Button ထည့်သွင်းခြင်း
+                st_copy_to_clipboard(res, before_text="📋 Copy Result", after_text="✅ Copied to Clipboard!")
+                
+                tts = gTTS(res, lang=LANGS[target_i])
+                fp = io.BytesIO()
+                tts.write_to_fp(fp)
+                fp.seek(0)
+                autoplay_audio(fp)
 
 st.divider()
-st.caption("Powered by Gemini 3 Flash & 1.5 Flash Vision")
-        
+st.caption("Powered by Gemini 3 & Streamlit")
