@@ -15,12 +15,11 @@ except Exception:
 # UI Styling
 st.set_page_config(page_title="Gemini Pro Vision Hub", page_icon="📸", layout="wide")
 
-# Custom CSS for Copy Button and Layout
+# Custom CSS for UI
 st.markdown("""
     <style>
     .stButton>button { width: 100%; border-radius: 10px; background-color: #007bff; color: white; font-weight: bold; }
-    .result-area { background-color: #f8f9fa; padding: 20px; border-radius: 10px; border: 1px solid #dee2e6; margin-bottom: 10px; }
-    .copy-msg { color: green; font-size: 0.8em; }
+    .result-area { background-color: #f8f9fa; padding: 20px; border-radius: 10px; border: 1px solid #dee2e6; margin-bottom: 10px; color: #333; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -37,7 +36,7 @@ with st.sidebar:
         st.caption(f"• {h}")
 
 # Main App
-st.title("📸 Barlar Barlar Smart AI Translator")
+st.title("📸 Barlar😁😁😁😁 AI  Translator")
 st.write("Text, Files နှင့် Images များကို AI ဖြင့် တစ်နေရာတည်းတွင် ဘာသာပြန်ပါ")
 
 LANGS = {'Myanmar': 'my', 'English': 'en', 'Thai': 'th', 'Korean': 'ko', 'Japanese': 'ja', 'Chinese': 'zh-CN'}
@@ -48,13 +47,11 @@ tab1, tab2, tab3 = st.tabs(["📝 Text", "📁 File", "🖼️ Image Scan"])
 def translate_ai(content, target_lang, is_image=False):
     try:
         if is_image:
-            # Image + Prompt
             response = client.models.generate_content(
-                model="gemini-1.5-flash", # Vision အတွက် 1.5 က ပိုငြိမ်ပါတယ်
+                model="gemini-1.5-flash",
                 contents=["ဖော်ပြပါပုံထဲက စာသားများကို အကုန်ဖတ်ပြီး " + target_lang + " ဘာသာသို့ အဓိပ္ပာယ်ပြည့်စုံစွာ ပြန်ပေးပါ။ ရလဒ်စာသားပဲ ထုတ်ပေးပါ။", content]
             )
         else:
-            # Text Prompt
             response = client.models.generate_content(
                 model="gemini-3-flash-preview",
                 contents=f"Translate the following to {target_lang} naturally. Return only translation: {content}"
@@ -75,8 +72,11 @@ with tab1:
         res = translate_ai(input_t, target_t)
         st.session_state.history.append(f"Text: {res[:20]}...")
         st.markdown(f'<div class="result-area">{res}</div>', unsafe_allow_html=True)
-        st.text_input("Copy လုပ်ရန် (Ctrl+A then Ctrl+C)", value=res)
-        st.audio(io.BytesIO(gTTS(res, lang=LANGS[target_t])._write_to_fp()).read())
+        st.text_input("Copy လုပ်ရန် (Select & Copy)", value=res)
+        tts = gTTS(res, lang=LANGS[target_t])
+        fp = io.BytesIO()
+        tts.write_to_fp(fp)
+        st.audio(fp)
 
 # --- TAB 2: File ---
 with tab2:
@@ -102,7 +102,6 @@ with tab3:
                 res = translate_ai(img, target_i, is_image=True)
                 st.markdown(f'<div class="result-area">{res}</div>', unsafe_allow_html=True)
                 st.text_input("Copy Result:", value=res, key="img_res")
-                # TTS
                 try:
                     tts = gTTS(res, lang=LANGS[target_i])
                     fp = io.BytesIO()
@@ -111,4 +110,5 @@ with tab3:
                 except: pass
 
 st.divider()
-st.caption("Powered by Gemini 3 Flash & 1.5 Flash Vision"AIrtrtsionsion
+st.caption("Powered by Gemini 3 Flash & 1.5 Flash Vision")
+        
